@@ -8,6 +8,21 @@ from urllib.parse import urlparse
 from . import dates, schema
 
 
+def _coerce_date_only(date_value: Any) -> str | None:
+    """Return YYYY-MM-DD for supported source date values.
+
+    Some APIs emit full ISO-8601 datetimes while the pipeline's window
+    boundaries are date-only strings. Normalizing once prevents lexical string
+    comparisons from dropping same-day items that include a time component.
+    """
+    if date_value in (None, ""):
+        return None
+    parsed = dates.parse_date(str(date_value))
+    if parsed is None:
+        return str(date_value)
+    return parsed.date().isoformat()
+
+
 def filter_by_date_range(
     items: list[schema.SourceItem],
     from_date: str,
@@ -134,10 +149,10 @@ def _domain_from_url(url: str) -> str | None:
 def _date_confidence(item: dict[str, Any], from_date: str, to_date: str, default: str = "low") -> str:
     if item.get("date_confidence"):
         return str(item["date_confidence"])
-    date_value = item.get("date")
+    date_value = _coerce_date_only(item.get("date"))
     if not date_value:
         return default
-    return dates.get_date_confidence(str(date_value), from_date, to_date)
+    return dates.get_date_confidence(date_value, from_date, to_date)
 
 
 def _source_item(
@@ -165,7 +180,7 @@ def _source_item(
         url=url.strip(),
         author=(author or "").strip() or None,
         container=(container or "").strip() or None,
-        published_at=published_at,
+        published_at=_coerce_date_only(published_at),
         date_confidence=date_confidence,
         engagement=engagement or {},
         relevance_hint=max(0.0, min(1.0, float(relevance_hint or 0.0))),
