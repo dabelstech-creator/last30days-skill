@@ -241,6 +241,25 @@ class NormalizeV3Tests(unittest.TestCase):
         self.assertEqual("2026-03-17", normalized[0].published_at)
         self.assertEqual("high", normalized[0].date_confidence)
 
+    def test_fractional_zulu_datetime_is_normalized_before_range_filtering(self):
+        items = [
+            {
+                "id": "g-fractional-edge",
+                "title": "Same-day launch coverage",
+                "url": "https://example.com/launch",
+                "date": "2026-03-17T23:59:59.123Z",
+                "snippet": "Published late on the range end date.",
+            }
+        ]
+        normalized = normalize.normalize_source_items(
+            "grounding",
+            items,
+            "2026-02-15",
+            "2026-03-17",
+        )
+        self.assertEqual(1, len(normalized))
+        self.assertEqual("2026-03-17", normalized[0].published_at)
+
 
 if __name__ == "__main__":
     unittest.main()
