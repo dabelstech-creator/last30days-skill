@@ -23,14 +23,25 @@ def parse_date(date_str: Optional[str]) -> Optional[datetime]:
     if not date_str:
         return None
 
-    # Try Unix timestamp (from Reddit)
+    # Try Unix timestamp (from Reddit).
     try:
         ts = float(date_str)
         return datetime.fromtimestamp(ts, tz=timezone.utc)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError, OSError):
         pass
 
-    # Try ISO formats
+    # ``fromisoformat`` accepts the ISO variants commonly returned by search
+    # providers, including fractional seconds with a trailing ``Z``.  The
+    # explicit formats below remain as a compatibility fallback.
+    try:
+        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        if dt.tzinfo is not None:
+            return dt.astimezone(timezone.utc)
+        return dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        pass
+
+    # Try ISO formats as a compatibility fallback.
     formats = [
         "%Y-%m-%d",
         "%Y-%m-%dT%H:%M:%S",

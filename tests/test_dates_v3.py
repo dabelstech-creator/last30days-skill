@@ -24,10 +24,14 @@ class DatesV3Tests(unittest.TestCase):
         fractional = dates.parse_date("2026-03-16T12:34:56.123456+02:00")
         self.assertEqual("2026-03-16T10:34:56.123456+00:00", fractional.isoformat())
 
+        fractional_zulu = dates.parse_date("2026-03-16T12:34:56.123456Z")
+        self.assertEqual("2026-03-16T12:34:56.123456+00:00", fractional_zulu.isoformat())
+
     def test_parse_date_rejects_empty_and_invalid_values(self):
         self.assertIsNone(dates.parse_date(None))
         self.assertIsNone(dates.parse_date(""))
         self.assertIsNone(dates.parse_date("not-a-date"))
+        self.assertIsNone(dates.parse_date("1e1000"))
 
     def test_timestamp_to_date_handles_valid_and_invalid_values(self):
         self.assertEqual("2024-03-15", dates.timestamp_to_date(1710460800))
