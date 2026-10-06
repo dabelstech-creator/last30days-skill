@@ -583,9 +583,22 @@ def _comparison_entities(topic: str) -> list[str]:
         flags=re.I,
     )
     normalized = re.sub(r"\b(compared to)\b", " vs ", normalized, flags=re.I)
+
+    # A slash is meaningful only for the compact, title-cased comparison form
+    # (for example, "React/Vue/Svelte"). Splitting every slash treats API paths
+    # such as "/live-store/prepare-partition-downscale" as a comparison and
+    # incorrectly sends them through the competitor fanout path.
+    has_word_separator = bool(re.search(r"\b(?:vs\.?|versus)\b", normalized, re.I))
+    has_slash_comparison = bool(
+        re.search(r"\b[A-Z][a-z]{2,}(?:/[A-Z][a-z]{2,})+\b", normalized)
+    )
+    if not has_word_separator and not has_slash_comparison:
+        return []
+
+    separator = r"\bvs\.?\b|\bversus\b" if has_word_separator else r"/"
     parts = [
         part.strip(" \t\r\n?.,:;!()[]{}\"'")
-        for part in re.split(r"\bvs\.?\b|\bversus\b|/", normalized, flags=re.I)
+        for part in re.split(separator, normalized, flags=re.I)
         if part.strip(" \t\r\n?.,:;!()[]{}\"'")
     ]
     # Strip trailing context from parts ("Svelte for frontend in 2026" -> "Svelte")
