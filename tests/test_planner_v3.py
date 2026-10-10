@@ -4,6 +4,18 @@ from lib import planner
 
 
 class PlannerV3Tests(unittest.TestCase):
+    def test_api_path_is_not_interpreted_as_a_comparison(self):
+        topic = "GET,POST,DELETE /live-store/prepare-partition-downscale"
+
+        self.assertEqual([], planner._comparison_entities(topic))
+        self.assertNotEqual("comparison", planner._infer_intent(topic))
+
+    def test_title_cased_slash_syntax_remains_a_comparison(self):
+        self.assertEqual(
+            ["React", "Vue", "Svelte"],
+            planner._comparison_entities("React/Vue/Svelte"),
+        )
+
     def test_default_how_to_expands_past_llm_narrow_source_weights(self):
         raw = {
             "intent": "how_to",
